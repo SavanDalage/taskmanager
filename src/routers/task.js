@@ -23,20 +23,28 @@ router.post("/tasks", auth, async (req, res) => {
 // limit - limit na stronę
 // skip - ile pierwszych pominiętych. Jeżeli, np. limit=10 i skip=10 to pierwsza strona jest pomijana i zaczynamy od drugiej
 // GET / task?limit=10&skip=0
+// GET / task?sortBy=createdAt:desc
 router.get("/tasks", auth, async (req, res) => {
   const match = {};
+  const sort = {};
+
+  if (req.query.completed) {
+    match.completed = req.query.completed === "true";
+  }
+
+  if (req.query.sortBy) {
+    const parts = req.query.sortBy.split(":");
+    sort[parts[0]] = parts[1] === "desc" ? -1 : 1;
+  }
 
   try {
-    if (req.query.completed) {
-      match.completed = req.query.completed === "true";
-    }
-
     await req.user.populate({
       path: "tasks",
       match,
       options: {
         limit: parseInt(req.query.limit),
         skip: parseInt(req.query.skip),
+        sort,
       },
     });
     res.send(req.user.tasks);

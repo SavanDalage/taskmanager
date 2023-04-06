@@ -8,20 +8,35 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 ////////////////////////////
-/*
-app.use((req, res, next) => {
-  res.status(503).send("Server is temporarily disable");
+
+const multer = require("multer");
+const upload = multer({
+  dest: "images",
+  limits: {
+    fileSize: 1000000,
+  },
+  fileFilter(req, file, cb) {
+    if (!file.originalname.match(/\.(doc|docx)$/)) {
+      return cb(new Error("Please upload a Word document"));
+    }
+
+    cb(undefined, true);
+  },
 });
 
-
-app.use((req, res, next) => {
-  if (req.method === "GET") {
-    res.send("GET request are disable");
-  } else {
-    next();
+app.post(
+  "/upload",
+  upload.single("upload"),
+  (req, res) => {
+    res.send();
+  },
+  (error, re, res, nex) => {
+    res.status(400).send({ error: error.message });
   }
-});
-*/
+);
+
+////////////////////////////
+
 app.use(express.json()); // automaticly pars incoming json to an object; trafia to do req
 app.use(userRouter); // bo obsługa usera jest w innym pliku
 app.use(taskRouter);
@@ -31,19 +46,3 @@ app.use(taskRouter);
 app.listen(port, () => {
   console.log("Server is up on port " + port);
 });
-
-/*
-const Task = require("./models/tasks");
-const User = require("./models/user");
-
-const main = async () => {
-  // const task = await Task.findById("64284f00c1a5e58916bc22cc");
-  // await task.populate("owner");
-  // console.log(task.owner);
-
-  const user = await User.findById("64284df1b52cd943ccb97bbf");
-  await user.populate("tasks");
-  console.log(user.tasks);
-};
-main();
-*/

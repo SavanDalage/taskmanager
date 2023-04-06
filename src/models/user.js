@@ -112,7 +112,7 @@ userSchema.pre("save", async function (next) {
     user.password = await bcrypt.hash(user.password, 8);
   }
 
-  console.log("Just before saving");
+  // console.log("Just before saving");
 
   next(0);
 });
