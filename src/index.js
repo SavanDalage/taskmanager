@@ -2,38 +2,12 @@ const express = require("express");
 require("./db/mongoose");
 const userRouter = require("./routers/user"); // bo obsługa usera jest w innym pliku
 const taskRouter = require("./routers/task");
-const jwt = require("jsonwebtoken");
+// const jwt = require("jsonwebtoken");
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = process.env.PORT;
 
 ////////////////////////////
-
-const multer = require("multer");
-const upload = multer({
-  dest: "images",
-  limits: {
-    fileSize: 1000000,
-  },
-  fileFilter(req, file, cb) {
-    if (!file.originalname.match(/\.(doc|docx)$/)) {
-      return cb(new Error("Please upload a Word document"));
-    }
-
-    cb(undefined, true);
-  },
-});
-
-app.post(
-  "/upload",
-  upload.single("upload"),
-  (req, res) => {
-    res.send();
-  },
-  (error, re, res, nex) => {
-    res.status(400).send({ error: error.message });
-  }
-);
 
 ////////////////////////////
 

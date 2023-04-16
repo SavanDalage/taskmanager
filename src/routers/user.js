@@ -4,7 +4,9 @@ const User = require("../models/user");
 const auth = require("../middleware/auth");
 const Task = require("../models/tasks");
 const multer = require("multer");
-const { send } = require("express/lib/response");
+// const { send } = require("express/lib/response");
+const sharp = require("sharp");
+const { sendWelcomeEmail, sendGoodbyEmail } = require("../emails/account");
 
 /////////////////////////////////////////////
 
@@ -14,8 +16,9 @@ router.post("/users", async (req, res) => {
 
   try {
     const token = await user.genereteAuthToken();
-
     await user.save();
+
+    sendWelcomeEmail(user.email, user.name);
     res.status(201).send({ user, token });
   } catch (e) {
     res.status(400).send(e);
@@ -93,8 +96,11 @@ router.delete("/users/me", auth, async (req, res) => {
   try {
     // await req.user.remove(); // nie działa
     // await User.remove({ owner: req.user });
+    sendGoodbyEmail(req.user.email, req.user.name);
+
     await User.deleteOne(req.user);
     await Task.deleteMany({ owner: req.user._id });
+
     res.send(req.user);
   } catch (e) {
     res.status(500).send();
@@ -103,7 +109,7 @@ router.delete("/users/me", auth, async (req, res) => {
 
 // upload avatar
 const upload = multer({
-  dest: "avatars",
+  // dest: "avatars", // wywalenie destynacji spowoduje, że upload zwraca img z handlera i pozwala coś z nim zrobić
   limits: {
     fileSize: 1000000,
   },
@@ -116,15 +122,44 @@ const upload = multer({
   },
 });
 
+// avatar
 router.post(
   "/users/me/avatar",
+  auth,
   upload.single("avatar"),
-  (req, res) => {
+  async (req, res) => {
+    const buffer = await sharp(req.file.buffer)
+      .png()
+      .resize({ width: 250, height: 250 })
+      .toBuffer();
+    req.user.avatar = buffer; // możemy tego użyć tylko wtedy gdy w upload nie ma dest. Definiujemy "req.user.avatar"
+    await req.user.save();
     res.send();
   },
   (error, res, req, next) => {
     res.status(400).send({ error: error.message });
   }
 );
+
+router.delete("/users/me/avatar", auth, async (req, res) => {
+  req.user.avatar = undefined; // ustawiamy "req.user.avatar" jako undefind
+  await req.user.save();
+  res.send();
+});
+
+router.get("/users/:id/avatar", async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+
+    if (!user || !user.avatar) {
+      throw new Error();
+    }
+
+    res.set("Content-Type", "image/png");
+    res.send(user.avatar);
+  } catch (e) {
+    res.status(404).send();
+  }
+});
 
 module.exports = router;
